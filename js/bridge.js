@@ -38,6 +38,7 @@
   document.querySelectorAll('[data-bridge-action]').forEach(function (button) {
     button.addEventListener('click', function () {
       const response = sendAppBridgeMessage(messages[button.dataset.bridgeAction]);
+      if (!result) return;
       result.textContent = response.sent
         ? `Message sent. Request ID: ${response.requestId}\nWaiting for a native bridge response; success is not yet confirmed.`
         : `Message not sent. ${response.reason}`;
@@ -54,8 +55,10 @@
     };
     const item = document.createElement('li');
     item.textContent = `Request ID: ${safe.requestId} | Status: ${safe.status} | Code: ${safe.code} | Message: ${safe.message}`;
-    log.prepend(item);
-    while (log.children.length > 10) log.lastElementChild.remove();
-    result.textContent = `Native response received for ${safe.requestId}. Status: ${safe.status}.`;
+    if (log) {
+      log.prepend(item);
+      while (log.children.length > 10) log.lastElementChild.remove();
+    }
+    if (result) result.textContent = `Native response received for ${safe.requestId}. Status: ${safe.status}.`;
   });
 }());
