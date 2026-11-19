@@ -38,7 +38,7 @@ Pages use relative links, so the showcase stays within `/mobile-demo/sample-cafe
 
 ## Native bridge and browser behavior
 
-`js/bridge.js` exposes `window.DaCodaHubBridge` and sends versioned requests only when `window.ReactNativeWebView` is available. The Test Lab's bridge page demonstrates its supported message types and displays safe response fields as text.
+`js/bridge.js` exposes `window.DaCodaHubBridge` and sends versioned requests through `window.WhiteLabelBridge.postMessage` when the app exposes it. The Test Lab's bridge page demonstrates its supported message types and displays safe response fields as text.
 
 Sample Cafe uses the existing `openMap` and `share` message types. In a regular browser, **Find Us** opens a maps search; sharing uses the browser share API when available and an email link otherwise. Phone and email links use standard `tel:` and `mailto:` URLs. Sending a bridge request means the request was posted to the host; it does not by itself confirm that the native action succeeded.
 

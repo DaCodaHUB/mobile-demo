@@ -4,7 +4,7 @@
   const BRIDGE_RESPONSE_EVENT = 'freelanceAppBridgeResponse';
 
   function isAppBridgeAvailable() {
-    return typeof window.ReactNativeWebView !== 'undefined';
+    return typeof window.WhiteLabelBridge?.postMessage === 'function';
   }
 
   function createRequestId() {
@@ -16,7 +16,11 @@
       return { sent: false, reason: 'The native bridge is not available in this browser.' };
     }
     const request = { version: 1, id: message.id || createRequestId(), ...message };
-    window.ReactNativeWebView.postMessage(JSON.stringify(request));
+    try {
+      window.WhiteLabelBridge.postMessage(JSON.stringify(request));
+    } catch {
+      return { sent: false, reason: 'Could not send the native bridge request.' };
+    }
     return { sent: true, requestId: request.id };
   }
 
@@ -29,15 +33,26 @@
     openExternal: { type: 'openExternal', url: 'https://github.com' },
     share: { type: 'share', title: 'DaCodaHub Mobile Demo', message: 'Testing the DaCodaHub white-label mobile framework.', url: 'https://dacodahub.github.io/mobile-demo/' },
     openNative: { type: 'openNative', destination: 'settings' },
-    identifyNotificationUser: { type: 'identifyNotificationUser', externalId: 'demo_user_12345' },
     clearNotificationUser: { type: 'clearNotificationUser' }
   };
+
+  let activeRequestId;
+  const environment = document.querySelector('[data-bridge-environment]');
+  function updateBridgeAvailability() {
+    if (environment) {
+      environment.textContent = isAppBridgeAvailable() ? 'Native bridge available.' : 'Native bridge unavailable.';
+    }
+  }
+  updateBridgeAvailability();
+  window.addEventListener('load', updateBridgeAvailability);
 
   const result = document.querySelector('[data-bridge-result]');
   const log = document.querySelector('[data-response-log]');
   document.querySelectorAll('[data-bridge-action]').forEach(function (button) {
     button.addEventListener('click', function () {
+      updateBridgeAvailability();
       const response = sendAppBridgeMessage(messages[button.dataset.bridgeAction]);
+      activeRequestId = response.requestId;
       if (!result) return;
       result.textContent = response.sent
         ? `Message sent. Request ID: ${response.requestId}\nWaiting for a native bridge response; success is not yet confirmed.`
@@ -59,6 +74,9 @@
       log.prepend(item);
       while (log.children.length > 10) log.lastElementChild.remove();
     }
-    if (result) result.textContent = `Native response received for ${safe.requestId}. Status: ${safe.status}.`;
+    if (result && detail.requestId && detail.requestId === activeRequestId) {
+      activeRequestId = undefined;
+      result.textContent = `${safe.message} (Request ID: ${safe.requestId})`;
+    }
   });
 }());
